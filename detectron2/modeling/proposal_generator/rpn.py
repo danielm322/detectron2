@@ -653,7 +653,7 @@ class MCDRpnHead(nn.Module):
         pred_objectness_logits = []
         pred_anchor_deltas = []
         for x in features:
-            t = self.conv(x)
-            pred_objectness_logits.append(self.dropblock(self.objectness_logits(t)))
+            t = self.dropblock(self.conv(x))
+            pred_objectness_logits.append(self.objectness_logits(t))
             pred_anchor_deltas.append(self.anchor_deltas(t))
         return pred_objectness_logits, pred_anchor_deltas
