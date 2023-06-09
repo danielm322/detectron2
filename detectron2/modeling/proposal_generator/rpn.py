@@ -594,7 +594,7 @@ class MCDRpnHead(nn.Module):
         # Dropblock for catching the OoD
         self.dropblock = DropBlock2D(drop_prob=dropblock_prob, block_size=dropblock_size)
         # List for catching the cumulated RPN Conv info
-        self.identity = torch.nn.Identity()
+        self.rpn_intermediate_output = []
         # 1x1 conv for predicting box2box transform deltas
         self.anchor_deltas = nn.Conv2d(cur_channels, num_anchors * box_dim, kernel_size=1, stride=1)
 
@@ -652,7 +652,8 @@ class MCDRpnHead(nn.Module):
                 (N, A*box_dim, Hi, Wi) representing the predicted "deltas" used to transform anchors
                 to proposals.
         """
-        rpn_intermediate_output = []
+        # Clean list each forward pass
+        self.rpn_intermediate_output.clear()
         pred_objectness_logits = []
         pred_anchor_deltas = []
         for x in features:
@@ -661,12 +662,5 @@ class MCDRpnHead(nn.Module):
             pred_objectness_logits.append(self.objectness_logits(t))
             pred_anchor_deltas.append(self.anchor_deltas(t))
             # Hook operations to catch RPN intermediate output
-            # Get image HxW mean:
-            t = torch.mean(t, dim=2, keepdim=True)
-            t = torch.mean(t, dim=3, keepdim=True)
-            # Remove useless dimensions:
-            t = torch.squeeze(t)
-            rpn_intermediate_output.append(t)
-        rpn_intermediate_output = torch.cat(rpn_intermediate_output, dim=0).flatten()
-        rpn_intermediate_output = self.identity(rpn_intermediate_output)
+            self.rpn_intermediate_output.append(t)
         return pred_objectness_logits, pred_anchor_deltas
